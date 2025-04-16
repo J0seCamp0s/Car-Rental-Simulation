@@ -21,4 +21,8 @@ public class Car extends CarTypes{
     public void setStatus(Boolean newStatus) {
         status = newStatus;
     }
+
+    public void setDistanceTravelled (float newDistance) {
+        distanceTravelled = newDistance;
+    }
 }

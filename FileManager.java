@@ -24,9 +24,9 @@ public abstract class FileManager {
         return completeFileString;   
     }
 
-    protected void EditFile(String newFileContent, String filePath) throws IOException{
+    protected void EditFile(String newFileContent, String filePath, Boolean mode) throws IOException{
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, mode));
             writer.write(newFileContent);
             writer.close();
         } catch (IOException e) {
