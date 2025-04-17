@@ -1,5 +1,5 @@
 public class CarTypes {
-    public final String SEDAN = "SEDAN";
-    public final String SUV = "SUV";
-    public final String VAN = "VAN";
+    public static final String SEDAN = "SEDAN";
+    public static final String SUV = "SUV";
+    public static final String VAN = "VAN";
 }

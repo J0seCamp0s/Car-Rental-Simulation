@@ -1,6 +1,6 @@
 import java.util.List;
 
-public class CarRental extends FileManager{
+public class CarRental extends BaseRunningProgram{
     private String city;
     private List<Car> carList;
     private List<String> lotList; 

@@ -25,4 +25,8 @@ public class Car extends CarTypes{
     public void setDistanceTravelled (float newDistance) {
         distanceTravelled = newDistance;
     }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
 }
