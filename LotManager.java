@@ -36,10 +36,11 @@ public class LotManager extends BaseRunningProgram{
             }
         }
 
-        HashMap<String, String> flagParameters = manager.getFlagParameters();
-        HashMap<String, String> expectedTypes = manager.getExpectedParameterTypes();
+        //Store flag parameters and expected types for flag parameters
+        HashMap<String, String> flagParameters = manager.GetFlagParameters();
+        HashMap<String, String> expectedTypes = manager.GetExpectedParameterTypes();
 
-
+        //Check paramter types
         for (Map.Entry<String, String> entry : expectedTypes.entrySet()) {
             String flag = entry.getKey();
             String expectedType = entry.getValue();
@@ -49,9 +50,15 @@ public class LotManager extends BaseRunningProgram{
             }
         }
 
-        manager.AddVehicle(CarTypes.SEDAN, Integer.valueOf(flagParameters.getOrDefault("add-sedan", "1")));
-        manager.AddVehicle(CarTypes.SUV, Integer.valueOf(flagParameters.getOrDefault("add-suv", "1")));
-        manager.AddVehicle(CarTypes.VAN, Integer.valueOf(flagParameters.getOrDefault("add-van", "1")));
+        String carLotData = manager.ReadFile(flagParameters.get("lot-name") + ".txt");
+        if(!carLotData.isBlank()) {
+
+        }
+
+        //Add vehicles to lot file
+        manager.AddVehicle(CarTypes.SEDAN, Integer.valueOf(flagParameters.getOrDefault("add-sedan", "0")));
+        manager.AddVehicle(CarTypes.SUV, Integer.valueOf(flagParameters.getOrDefault("add-suv", "0")));
+        manager.AddVehicle(CarTypes.VAN, Integer.valueOf(flagParameters.getOrDefault("add-van", "0")));
         
     }
 
@@ -72,7 +79,23 @@ public class LotManager extends BaseRunningProgram{
             licensePlate = GenerateLicensePlate();
         }
 
-        carList.add(new Car(licensePlate, vehicleTypeCode));
+        carList.add(new Car(licensePlate, vehicleTypeCode, 0));
+        return true;
+    }
+
+    public Boolean AddVehicle(String licensePlate, String vehicleType, Integer distanceTravelled) {
+        String formattedVehicleType = vehicleType.toUpperCase();
+        Integer vehicleTypeCode;
+        switch(formattedVehicleType) {
+            case "SEDAN" -> vehicleTypeCode = 0;
+            case "SUV" -> vehicleTypeCode = 1;
+            case "VAN" -> vehicleTypeCode = 2;
+            default -> {
+                return false;
+            }
+        }
+
+        carList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled));
         return true;
     }
 
@@ -115,18 +138,12 @@ public class LotManager extends BaseRunningProgram{
     }
 
     private Boolean CheckLincensePlateUsage(String licensePlate) {
-        String licensePlatesInUse;
-        //Try reading "UsedLicensePlates.txt"
-        try {
-            licensePlatesInUse = ReadFile("UsedLicensePlates.txt");
-        //If file is not found
-        } catch (FileNotFoundException e) {
-            //Return true, no licensePlate is in use
-            return true;
-        }
+
+        //Read file storing all currently used license plates
+        String licensePlatesInUse = ReadFile("UsedLicensePlates.txt");
 
         //If licensePlate is part of licensePlatesInUse, return false (cannot be used)
-        //Else return true (can be used)
+        //Else return true (can be used or file does not exist)
         return !licensePlatesInUse.contains(licensePlate); 
     }
 
@@ -158,6 +175,48 @@ public class LotManager extends BaseRunningProgram{
             return false;
         }
         //If no IOException was thrown, return true (operation successful)
+        return true;
+    }
+
+    public Boolean RetrieveCurrentCarsInLot(String lotData) {
+        Integer startIndex = 0, midIndex = 0, endIndex = 0, kmTravelled;
+        String licensePlate, type, carString;
+
+        while(startIndex < lotData.length()) {
+            endIndex = lotData.indexOf('\n');
+            carString = lotData.substring(startIndex, endIndex);
+
+            midIndex = carString.indexOf(',');
+            licensePlate = carString.substring(startIndex, midIndex);
+
+            startIndex = midIndex + 1;
+            midIndex = carString.indexOf(',', startIndex);
+            type = carString.substring(startIndex, midIndex);
+
+            try {
+                startIndex = midIndex + 1;
+                kmTravelled = Integer.valueOf(carString.substring(startIndex, endIndex));
+            } catch (NumberFormatException eNumb) {
+                System.out.println("Non-numeric value given for distance travelled!");
+                return false;
+            }
+
+            AddVehicle(licensePlate, type, kmTravelled);
+        }
+
+        return true;
+    }
+
+    public void UpdateLotFile() {
+        //Implement
+    }
+
+    public void RetrieveCarStatus() {
+        //Implement
+    }
+
+    public Boolean RemoveVehicle() {
+        //Implement
         return true;
     }
 }

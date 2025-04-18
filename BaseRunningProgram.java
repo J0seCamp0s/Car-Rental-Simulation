@@ -14,11 +14,11 @@ public abstract class BaseRunningProgram {
     protected HashMap<String, String> flagParameters = new HashMap<>();
     protected HashMap<String, String> expectedParameterTypes = new HashMap<>();
 
-    protected HashMap<String, String> getFlagParameters() {
+    protected HashMap<String, String> GetFlagParameters() {
         return flagParameters;
     }
 
-    protected HashMap<String, String> getExpectedParameterTypes() {
+    protected HashMap<String, String> GetExpectedParameterTypes() {
         return expectedParameterTypes;
     }
     
@@ -49,11 +49,23 @@ public abstract class BaseRunningProgram {
     //FIX: Check using type casts instead of using the class name
     //Everything is stored as a string in the dictionary
     protected Boolean CheckFlagParameterType(String flag, String desiredType) {
-        Object flagParameter = flagParameters.getOrDefault(flag, "1");
-        return(flagParameter.getClass().getName().equals(desiredType));
+        switch(desiredType) {
+            case "Integer" -> {
+                try {
+                    Integer testInteger = Integer.valueOf(flagParameters.getOrDefault(flag, "1"));
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+                return true;
+            }
+            default -> {
+                Object flagParameter = flagParameters.getOrDefault(flag, "1");
+                return(flagParameter.getClass().getName().equals(desiredType));
+            }
+        }
     }
 
-    protected String ReadFile(String filePath) throws FileNotFoundException {
+    protected String ReadFile(String filePath) {
         String completeFileString = "";
         try {
             File inputFile = new File(filePath);
@@ -66,7 +78,6 @@ public abstract class BaseRunningProgram {
             fileReader.close();
         } catch(FileNotFoundException e){
             System.out.println("Error, file not found");
-            throw e;
         }
         return completeFileString;   
     }

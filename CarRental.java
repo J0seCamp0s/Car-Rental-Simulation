@@ -6,7 +6,7 @@ public class CarRental extends BaseRunningProgram{
     private List<String> lotList; 
     
     public CarRental() {
-
+        
     }
 
     public static void main(String[] args) {

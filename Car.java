@@ -2,12 +2,12 @@ public class Car extends CarTypes{
     private Boolean status;
     private String licensePlate;
     private String carType;
-    private float distanceTravelled;
+    private Integer distanceTravelled;
 
-    public Car(String plateNumber, Integer type) {
+    public Car(String plateNumber, Integer type, Integer kmTravelled) {
         status = false;
         licensePlate = plateNumber;
-        distanceTravelled = 0;
+        distanceTravelled = kmTravelled;
         switch(type) {
             case 0:
                 carType = SEDAN;
@@ -22,7 +22,7 @@ public class Car extends CarTypes{
         status = newStatus;
     }
 
-    public void setDistanceTravelled (float newDistance) {
+    public void setDistanceTravelled (Integer newDistance) {
         distanceTravelled = newDistance;
     }
 

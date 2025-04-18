@@ -3,6 +3,7 @@
 
 # Diagrams
 *.drawio
+*.bkp
 
 # Log file
 *.log
