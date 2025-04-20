@@ -1,3 +1,4 @@
+import java.util.Collections;
 import java.util.List;
 
 public class CarRental extends BaseRunningProgram{
@@ -6,7 +7,16 @@ public class CarRental extends BaseRunningProgram{
     private List<String> lotList; 
     
     public CarRental() {
-        
+        //Add supporte flags to list
+        Collections.addAll(supportedFlags,
+        "location","spaces-available",
+        "lots");
+
+        //Assign expected types to flags
+        expectedParameterTypes.put("location","String");
+        expectedParameterTypes.put("spaces-available","Integer");
+        expectedParameterTypes.put("lots","String");
+
     }
 
     public static void main(String[] args) {

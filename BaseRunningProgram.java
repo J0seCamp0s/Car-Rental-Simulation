@@ -46,21 +46,19 @@ public abstract class BaseRunningProgram {
     }
 
 
-    //FIX: Check using type casts instead of using the class name
-    //Everything is stored as a string in the dictionary
     protected Boolean CheckFlagParameterType(String flag, String desiredType) {
         switch(desiredType) {
             case "Integer" -> {
                 try {
-                    Integer testInteger = Integer.valueOf(flagParameters.getOrDefault(flag, "1"));
+                    Integer testInteger = Integer.valueOf(flagParameters.getOrDefault(flag, "0"));
                 } catch (NumberFormatException e) {
                     return false;
                 }
                 return true;
             }
             default -> {
-                Object flagParameter = flagParameters.getOrDefault(flag, "1");
-                return(flagParameter.getClass().getName().equals(desiredType));
+                Object flagParameter = flagParameters.getOrDefault(flag, "");
+                return(flagParameter.getClass().getSimpleName().equals(desiredType));
             }
         }
     }
@@ -68,27 +66,27 @@ public abstract class BaseRunningProgram {
     protected String ReadFile(String filePath) {
         String completeFileString = "";
         try {
-            File inputFile = new File(filePath);
+            File inputFile = new File("TextFiles\\" + filePath);
             Scanner fileReader = new Scanner(inputFile);
 
             while(fileReader.hasNextLine())
             {
-                completeFileString += (fileReader.nextLine());
+                completeFileString += (fileReader.nextLine()) + "\n";
             }
             fileReader.close();
         } catch(FileNotFoundException e){
-            System.out.println("Error, file not found");
+            System.out.println("Error, file not found!");
         }
         return completeFileString;   
     }
 
     protected void EditFile(String newFileContent, String filePath, Boolean mode) throws IOException{
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, mode));
+            BufferedWriter writer = new BufferedWriter(new FileWriter("TextFiles\\" + filePath, mode));
             writer.write(newFileContent);
             writer.close();
         } catch (IOException e) {
-            System.out.println("Couldn't write to file");
+            System.out.println("Couldn't write to file!");
             throw e;
         }
     }

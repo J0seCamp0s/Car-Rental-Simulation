@@ -1,4 +1,4 @@
-public class Car extends CarTypes{
+public class Car extends CarStaticData{
     private Boolean status;
     private String licensePlate;
     private String carType;
@@ -9,13 +9,15 @@ public class Car extends CarTypes{
         licensePlate = plateNumber;
         distanceTravelled = kmTravelled;
         switch(type) {
-            case 0:
-                carType = SEDAN;
-            case 1:
-                carType = SUV;
-            case 2: 
-                carType = VAN;
+            case 0-> carType = SEDAN;
+            case 1-> carType = SUV;
+            case 2-> carType = VAN;
         }
+    }
+
+    public String ToString() {
+        String carString = licensePlate + "," + carType + "," + Integer.toString(distanceTravelled) + "\n";
+        return carString;
     }
 
     public void setStatus(Boolean newStatus) {
