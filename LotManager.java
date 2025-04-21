@@ -1,14 +1,9 @@
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class LotManager extends BaseRunningProgram{
-
-    private List<Car> carList = new ArrayList<>();
     private String lotName;
     
 
@@ -37,31 +32,17 @@ public class LotManager extends BaseRunningProgram{
             }
         }
 
+        //Set lot's name once flags are parsed
         manager.SetLotName();
 
-        //Store flag parameters and expected types for flag parameters
+        //Store flag parameters for easier access in main
         HashMap<String, String> flagParameters = manager.GetFlagParameters();
-        HashMap<String, String> expectedTypes = manager.GetExpectedParameterTypes();
 
-        //Check paramter types
-        for (Map.Entry<String, String> entry : expectedTypes.entrySet()) {
-            String flag = entry.getKey();
-            String expectedType = entry.getValue();
-
-            if(!manager.CheckFlagParameterType(flag, expectedType)) {
-                System.out.println(String.format("Incompatible type for %s flag!", flag));
-                return;
-            }
-        }
+        //Check flag parameter types
+        manager.CheckFlagParameterTypes();
 
         //Retrieve all cars already in lot 
-        String carLotData = manager.ReadFile(flagParameters.get("lot-name") + ".txt");
-        if(!carLotData.isBlank()) {
-            manager.RetrieveCurrentCarsInLot(carLotData);
-        }
-        else {
-            System.out.println(String.format("The lot file for current lot (%s) does not exist yet.", flagParameters.get("lot-name")));
-        }
+        manager.RetrieveLocationData();
 
         //Add vehicles to lot file
         manager.AddVehicle(CarStaticData.SEDAN, Integer.valueOf(flagParameters.getOrDefault("add-sedan", "0")));
@@ -79,12 +60,23 @@ public class LotManager extends BaseRunningProgram{
         manager.UpdateLotIndexFile();
     }
 
-    public void SetLotName() {
+    @Override
+    protected void RetrieveLocationData() {
+        String carLotData = ReadFile(flagParameters.get("lot-name") + ".txt");
+        if(!carLotData.isBlank()) {
+            RetrieveLocationCars(carLotData);
+        }
+        else {
+            System.out.println(String.format("The lot file for current lot (%s) does not exist yet.", flagParameters.get("lot-name")));
+        }
+    }
+
+    private void SetLotName() {
         lotName = flagParameters.get("lot-name");
     }
 
     //Used when vehicle is being created
-    public Boolean AddVehicle(String vehicleType, Integer vehicleAmount) {
+    private Boolean AddVehicle(String vehicleType, Integer vehicleAmount) {
         String formattedVehicleType = vehicleType.toUpperCase();
         Integer vehicleTypeCode;
         switch(formattedVehicleType) {
@@ -110,27 +102,6 @@ public class LotManager extends BaseRunningProgram{
         return true;
     }
 
-    //Used when car already existed
-    public Boolean AddVehicle(String licensePlate, String vehicleType, Integer distanceTravelled) {
-
-        //Pass in vehicle code based on car type
-        String formattedVehicleType = vehicleType.toUpperCase();
-        Integer vehicleTypeCode;
-        switch(formattedVehicleType) {
-            case "SEDAN" -> vehicleTypeCode = 0;
-            case "SUV" -> vehicleTypeCode = 1;
-            case "VAN" -> vehicleTypeCode = 2;
-            //Not supported type was passed in, return false (operation failed)
-            default -> {
-                System.out.println(String.format("Unspported car type %s", formattedVehicleType));
-                return false;
-            }
-        }
-
-        carList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled));
-        return true;
-    }
-
     private String GenerateLicensePlate() {
 
         Random indexRandom = new Random();
@@ -138,14 +109,14 @@ public class LotManager extends BaseRunningProgram{
 
         //Pick frist three characters of license plate
         for (int i = 0; i < 3; i++) {
-            newLicensePlate += CarStaticData.uppercaseLetters[indexRandom.nextInt(CarStaticData.uppercaseLetters.length)];
+            newLicensePlate += CarStaticData.uppercaseLetters.get(indexRandom.nextInt(CarStaticData.uppercaseLetters.size()));
         }
 
         newLicensePlate+= "-";
 
         //Pick last three characters of license plate
         for (int i = 4; i < 7; i++) {
-            newLicensePlate += CarStaticData.numberStrings[indexRandom.nextInt(CarStaticData.numberStrings.length)];
+            newLicensePlate += CarStaticData.numberStrings.get(indexRandom.nextInt(CarStaticData.numberStrings.size()));
         }
 
         //Check if the license plate generated is valid
@@ -175,7 +146,7 @@ public class LotManager extends BaseRunningProgram{
         return !licensePlatesInUse.contains(licensePlate); 
     }
 
-    public Boolean RemoveVehicle(String licensePlate) {
+    private Boolean RemoveVehicle(String licensePlate) {
         //Iterate over all cars in lot
         for(Car currentCar: carList) {
             //If licensePlate == currentCar's licensePlate
@@ -193,36 +164,7 @@ public class LotManager extends BaseRunningProgram{
         return false;
     }
 
-    public Boolean RetrieveCurrentCarsInLot(String lotData) {
-        Integer startIndex = 0, midIndex, endIndex, kmTravelled;
-        String licensePlate, type;
-
-        while(startIndex < lotData.length()) {
-            endIndex = lotData.indexOf('\n', startIndex);
-
-            midIndex = lotData.indexOf(',', startIndex);
-            licensePlate = lotData.substring(startIndex, midIndex);
-
-            startIndex = midIndex + 1;
-            midIndex = lotData.indexOf(',', startIndex);
-            type = lotData.substring(startIndex, midIndex);
-
-            try {
-                startIndex = midIndex + 1;
-                kmTravelled = Integer.valueOf(lotData.substring(startIndex, endIndex));
-            } catch (NumberFormatException eNumb) {
-                System.out.println("Non-numeric value given for distance travelled!");
-                return false;
-            }
-
-            AddVehicle(licensePlate, type, kmTravelled);
-            startIndex = endIndex + 1;
-        }
-
-        return true;
-    }
-
-    public void UpdateLotFile() {
+    private void UpdateLotFile() {
         //Create new string to write into file
         String updatedLotData = "";
 
@@ -246,7 +188,7 @@ public class LotManager extends BaseRunningProgram{
         System.out.println("Lot file updated successfully.");
     }
 
-    public void UpdateUsedLicensePlatesFile() {
+    private void UpdateUsedLicensePlatesFile() {
         String licensePlatesInUse = ReadFile("UsedLicensePlates.txt");
 
         for(Car currentCar: carList) {
@@ -261,7 +203,7 @@ public class LotManager extends BaseRunningProgram{
         }
     }
 
-    public void UpdateLotIndexFile() {
+    private void UpdateLotIndexFile() {
 
         String lotIndex = ReadFile("LotIndex.txt");
         if(!lotIndex.contains(lotName)) {
