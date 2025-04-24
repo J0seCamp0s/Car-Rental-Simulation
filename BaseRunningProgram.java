@@ -1,8 +1,9 @@
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -83,7 +84,7 @@ public abstract class BaseRunningProgram {
     protected abstract void RetrieveLocationData();
 
     //Used when car already existed
-    protected Boolean AddVehicle(String licensePlate, String vehicleType, Integer distanceTravelled) {
+    protected Boolean AddVehicle(String licensePlate, String vehicleType, Double distanceTravelled, List<Car> cList, Boolean discountApplied) {
 
         //Pass in vehicle code based on car type
         String formattedVehicleType = vehicleType.toUpperCase();
@@ -99,33 +100,46 @@ public abstract class BaseRunningProgram {
             }
         }
 
-        carList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled));
+        cList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled, false));
         return true;
     }
 
-    protected Boolean RetrieveLocationCars(String locationCars) {
-        Integer startIndex = 0, midIndex, endIndex, kmTravelled;
+    protected Tuple3<String, String, Double> ParseCarString(String carString) {
+        Integer startIndex = 0, midIndex, endIndex = carString.length();
+        Double kmTravelled;
         String licensePlate, type;
+        
+        midIndex = carString.indexOf(',', startIndex);
+        licensePlate = carString.substring(startIndex, midIndex);
+
+        startIndex = midIndex + 1;
+        midIndex = carString.indexOf(',', startIndex);
+        type = carString.substring(startIndex, midIndex);
+
+        try {
+            startIndex = midIndex + 1;
+            kmTravelled = Double.valueOf(carString.substring(startIndex, endIndex));
+        } catch (NumberFormatException eNumb) {
+            System.out.println("Non-numeric value given for distance travelled!");
+            return new Tuple3<>(null, null, null);
+        }
+
+        return new Tuple3<>(licensePlate, type, kmTravelled);
+    }
+
+    protected Boolean RetrieveLocationCars(String locationCars) {
+        Integer startIndex = 0, endIndex;
+        String carString;
 
         while(startIndex < locationCars.length()) {
             endIndex = locationCars.indexOf('\n', startIndex);
+            carString = locationCars.substring(startIndex, endIndex);
 
-            midIndex = locationCars.indexOf(',', startIndex);
-            licensePlate = locationCars.substring(startIndex, midIndex);
-
-            startIndex = midIndex + 1;
-            midIndex = locationCars.indexOf(',', startIndex);
-            type = locationCars.substring(startIndex, midIndex);
-
-            try {
-                startIndex = midIndex + 1;
-                kmTravelled = Integer.valueOf(locationCars.substring(startIndex, endIndex));
-            } catch (NumberFormatException eNumb) {
-                System.out.println("Non-numeric value given for distance travelled!");
+            Tuple3<String, String, Double> carTuple = ParseCarString(carString);
+            if(carTuple.GetItem1() == null) {
                 return false;
             }
-
-            AddVehicle(licensePlate, type, kmTravelled);
+            AddVehicle(carTuple.GetItem1(), carTuple.GetItem2(), carTuple.GetItem3(), carList, false);
             startIndex = endIndex + 1;
         }
 
@@ -161,31 +175,57 @@ public abstract class BaseRunningProgram {
         return true;
     }
 
+    /*
+     * Chat-GPT prompt to add locking into the method:
+     * Please edit this method so that it can support file locking for exclusive access
+     * during reading: <Previous version of method>
+     */
     protected String ReadFile(String filePath) {
         String completeFileString = "";
-        try {
-            File inputFile = new File("TextFiles\\" + filePath);
-            Scanner fileReader = new Scanner(inputFile);
-
-            while(fileReader.hasNextLine())
-            {
-                completeFileString += (fileReader.nextLine()) + "\n";
+        File file = new File("TextFiles\\" + filePath);
+    
+        try (
+            RandomAccessFile raf = new RandomAccessFile(file, "r");             // 
+            FileChannel channel = raf.getChannel();                                  //
+            FileLock lock = channel.lock(0L, Long.MAX_VALUE, true);  // 
+            Scanner fileReader = new Scanner(file)
+        ) {
+            while (fileReader.hasNextLine()) {
+                completeFileString += fileReader.nextLine() + "\n";
             }
-            fileReader.close();
-        } catch(FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             System.out.println("Error, file not found!");
+        } catch (IOException e) {                                                     //
+            System.out.println("Error while locking/reading file!");                //
         }
-        return completeFileString;   
+    
+        return completeFileString;
     }
-
-    protected void EditFile(String newFileContent, String filePath, Boolean mode) throws IOException{
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("TextFiles\\" + filePath, mode));
-            writer.write(newFileContent);
-            writer.close();
+    
+    /*
+     * Chat-GPT prompt to add locking into the method:
+     * Please edit this method so that it can support file locking for exclusive access
+     * during writting: <Previous version of method>
+     */
+    protected void EditFile(String newFileContent, String filePath, Boolean mode) throws IOException {
+        File file = new File("TextFiles\\" + filePath);
+    
+        try (
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");   //
+            FileChannel channel = raf.getChannel();                         //
+            FileLock lock = channel.lock()                                  // 
+        ) {
+            if (mode) {                                                     //
+                raf.seek(raf.length());                                     // 
+            } else {
+                raf.setLength(0);                                 // 
+                raf.seek(0);                                            //
+            }
+            raf.writeBytes(newFileContent);                                 //
         } catch (IOException e) {
             System.out.println("Couldn't write to file!");
             throw e;
         }
     }
+    
 }

@@ -62,7 +62,7 @@ public class LotManager extends BaseRunningProgram{
 
     @Override
     protected void RetrieveLocationData() {
-        String carLotData = ReadFile(flagParameters.get("lot-name") + ".txt");
+        String carLotData = ReadFile(lotName + ".txt");
         if(!carLotData.isBlank()) {
             RetrieveLocationCars(carLotData);
         }
@@ -71,8 +71,28 @@ public class LotManager extends BaseRunningProgram{
         }
     }
 
-    private void SetLotName() {
+    //Used in LotManager's main
+    public void SetLotName() {
         lotName = flagParameters.get("lot-name");
+    }
+
+    //Used when creating a LotManager entity in CarRental methods
+    public void SetLotName(String newLotName) {
+        lotName = newLotName;
+    }
+
+    public Car SearchCarType(String type) {
+        for(Car currentCar: carList) {
+            //If car type is the same as required type
+            //Remove it from lot's cars
+            //Return it
+            if (currentCar.GetCarType().equals(type)) {
+                RemoveVehicle(currentCar.GetLicensePlate());
+                return currentCar;
+            }
+        }
+        //Return null if no car found
+        return null;
     }
 
     //Used when vehicle is being created
@@ -96,7 +116,7 @@ public class LotManager extends BaseRunningProgram{
                 licensePlate = GenerateLicensePlate();
             }
 
-            carList.add(new Car(licensePlate, vehicleTypeCode, 0));
+            carList.add(new Car(licensePlate, vehicleTypeCode, 0.0, false));
         }
         
         return true;
@@ -137,7 +157,7 @@ public class LotManager extends BaseRunningProgram{
 
         //If file does not exist
         if(licensePlatesInUse.isBlank()) {
-            System.out.println("The file LicensePlatesInUse.txt does not exist yet!");
+            System.out.println("The file UsedLicensePlates.txt does not exist yet!");
             return true;
         }
 
@@ -150,7 +170,7 @@ public class LotManager extends BaseRunningProgram{
         //Iterate over all cars in lot
         for(Car currentCar: carList) {
             //If licensePlate == currentCar's licensePlate
-            if(currentCar.getLicensePlate().equals(licensePlate)) {
+            if(currentCar.GetLicensePlate().equals(licensePlate)) {
                 //Matching license plate found in currentCar
                 //Return true (car found and removed)
                 carList.remove(currentCar);
@@ -160,11 +180,11 @@ public class LotManager extends BaseRunningProgram{
         }
         //No matching license plate found in carList
         //Return false (car not found)
-        System.out.println(String.format("Car with license plate %s not found in current lot", licensePlate));
+        System.out.println(String.format("Car with license plate %s not found in current lot.", licensePlate));
         return false;
     }
 
-    private void UpdateLotFile() {
+    public void UpdateLotFile() {
         //Create new string to write into file
         String updatedLotData = "";
 
@@ -192,8 +212,8 @@ public class LotManager extends BaseRunningProgram{
         String licensePlatesInUse = ReadFile("UsedLicensePlates.txt");
 
         for(Car currentCar: carList) {
-            if(!licensePlatesInUse.contains(currentCar.getLicensePlate())) {
-                licensePlatesInUse += currentCar.getLicensePlate() + "\n";
+            if(!licensePlatesInUse.contains(currentCar.GetLicensePlate())) {
+                licensePlatesInUse += currentCar.GetLicensePlate() + "\n";
             }
         }
         try {
