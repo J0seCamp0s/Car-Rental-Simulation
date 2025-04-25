@@ -105,44 +105,36 @@ public abstract class BaseRunningProgram {
     }
 
     protected Tuple3<String, String, Double> ParseCarString(String carString) {
-        Integer startIndex = 0, midIndex, endIndex = carString.length();
         Double kmTravelled;
         String licensePlate, type;
-        
-        midIndex = carString.indexOf(',', startIndex);
-        licensePlate = carString.substring(startIndex, midIndex);
 
-        startIndex = midIndex + 1;
-        midIndex = carString.indexOf(',', startIndex);
-        type = carString.substring(startIndex, midIndex);
+        String[] carAttributes = carString.split(",");
+        licensePlate = carAttributes[0];
+        type = carAttributes[1];
 
         try {
-            startIndex = midIndex + 1;
-            kmTravelled = Double.valueOf(carString.substring(startIndex, endIndex));
+            kmTravelled = Double.valueOf(carAttributes[2]);
         } catch (NumberFormatException eNumb) {
             System.out.println("Non-numeric value given for distance travelled!");
             return new Tuple3<>(null, null, null);
         }
-
         return new Tuple3<>(licensePlate, type, kmTravelled);
     }
 
     protected Boolean RetrieveLocationCars(String locationCars) {
-        Integer startIndex = 0, endIndex;
-        String carString;
 
-        while(startIndex < locationCars.length()) {
-            endIndex = locationCars.indexOf('\n', startIndex);
-            carString = locationCars.substring(startIndex, endIndex);
-
+        String[] carStrings = locationCars.split("\n");
+        for(String carString: carStrings) {
+            if(carString.contains("#")) {
+                continue;
+            }
+            
             Tuple3<String, String, Double> carTuple = ParseCarString(carString);
             if(carTuple.GetItem1() == null) {
                 return false;
             }
             AddVehicle(carTuple.GetItem1(), carTuple.GetItem2(), carTuple.GetItem3(), carList, false);
-            startIndex = endIndex + 1;
         }
-
         return true;
     }
 

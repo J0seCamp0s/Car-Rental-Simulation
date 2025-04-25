@@ -29,6 +29,10 @@ public class Car extends CarStaticData{
         distanceTravelled = newDistance;
     }
 
+    public void SetDiscountRate(Integer discount) {
+        discountRate = discount;
+    }
+
     public String GetLicensePlate() {
         return licensePlate;
     }

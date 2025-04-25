@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 public class LotManager extends BaseRunningProgram{
@@ -64,10 +65,11 @@ public class LotManager extends BaseRunningProgram{
     protected void RetrieveLocationData() {
         String carLotData = ReadFile(lotName + ".txt");
         if(!carLotData.isBlank()) {
+            carList.clear();
             RetrieveLocationCars(carLotData);
         }
         else {
-            System.out.println(String.format("The lot file for current lot (%s) does not exist yet.", flagParameters.get("lot-name")));
+            System.out.println(String.format("The lot file for current lot (%s) does not exist yet.", lotName));
         }
     }
 
@@ -81,7 +83,12 @@ public class LotManager extends BaseRunningProgram{
         lotName = newLotName;
     }
 
-    public Car SearchCarType(String type) {
+    public Integer GetCarListSize() {
+        return carList.size();
+    }
+
+    //Used when looking for a specific car type
+    public Car SearchCar(String type) {
         for(Car currentCar: carList) {
             //If car type is the same as required type
             //Remove it from lot's cars
@@ -93,6 +100,21 @@ public class LotManager extends BaseRunningProgram{
         }
         //Return null if no car found
         return null;
+    }
+
+    //Used when only needs a car, regardless of type
+    public Car SearchCar() {
+        try {
+            //Retreive first car from carList
+            //Return it
+            Car currentCar = carList.getFirst();
+            RemoveVehicle(currentCar.GetLicensePlate());
+            return currentCar;
+        } catch (NoSuchElementException e) {
+            //Return null if list is empty
+            return null;
+        }
+       
     }
 
     //Used when vehicle is being created
@@ -174,13 +196,13 @@ public class LotManager extends BaseRunningProgram{
                 //Matching license plate found in currentCar
                 //Return true (car found and removed)
                 carList.remove(currentCar);
-                System.out.println(String.format("Car with license plate %s found and removed from current lot", licensePlate));
+                System.out.println(String.format("Car with license plate %s found and removed from current lot (%s)", licensePlate, lotName));
                 return true;
             }
         }
         //No matching license plate found in carList
         //Return false (car not found)
-        System.out.println(String.format("Car with license plate %s not found in current lot.", licensePlate));
+        System.out.println(String.format("Car with license plate %s not found in current lot (%s).", licensePlate, lotName));
         return false;
     }
 
@@ -223,11 +245,11 @@ public class LotManager extends BaseRunningProgram{
         }
     }
 
-    private void UpdateLotIndexFile() {
+    public void UpdateLotIndexFile() {
 
         String lotIndex = ReadFile("LotIndex.txt");
         if(!lotIndex.contains(lotName)) {
-            lotIndex += lotName + "\n";
+            lotIndex += lotName;
         }
 
         try {

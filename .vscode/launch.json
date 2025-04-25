@@ -6,22 +6,36 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Default-Value-Recognition(Add5Sedans)",
+            "name": "CarRental-Test",
             "request": "launch",
-            "mainClass": "${file}",
+            "mainClass": "CarRental",
             "console": "integratedTerminal",
             "args": [
-                "--lot-name=Cartago", "--add-sedan=5"
+                "--location=Escazu",
+                "--spaces-available=3",
+                "--lots=Cartago,SanJose"
             ]
         },
         {
             "type": "java",
-            "name": "Default-Value-Recognition(RemoveACar)",
+            "name": "LotManager-Default-Value-Recognition(Add5Sedans)",
             "request": "launch",
-            "mainClass": "${file}",
+            "mainClass": "LotManager",
             "console": "integratedTerminal",
             "args": [
-                "--lot-name=SanJose", "--remove-vehicle=TIQ-086"
+                "--lot-name=Cartago",
+                "--add-sedan=5"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "LotManager-Default-Value-Recognition(RemoveACar)",
+            "request": "launch",
+            "mainClass": "LotManager",
+            "console": "integratedTerminal",
+            "args": [
+                "--lot-name=SanJose",
+                "--remove-vehicle=TIQ-086"
             ]
         }
     ]

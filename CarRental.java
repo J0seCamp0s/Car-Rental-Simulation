@@ -1,13 +1,15 @@
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
 public class CarRental extends BaseRunningProgram{
     private String location;
-    private String allocatedSpaces;
-    private Integer earnings = 0;
-    private Integer loses = 0;
+    private Integer allocatedSpaces;
+    private Double earnings = 0.0;
+    private Double loses = 0.0;
     
     private List<String> lotList; 
     private List<String> supportedCommands = new ArrayList<>(){};
@@ -39,6 +41,8 @@ public class CarRental extends BaseRunningProgram{
         }
         //Set rental shop's location once flags are parsed
         rentalShop.SetLocation();
+        rentalShop.SetAllocatedSpaces();
+        rentalShop.SetLots();
 
         //Check flag parameter types
         rentalShop.CheckFlagParameterTypes();
@@ -46,27 +50,37 @@ public class CarRental extends BaseRunningProgram{
         //Retrieve car rental shop data
         rentalShop.RetrieveLocationData();
 
+        //Remove cars from shop if allocated spaces were changed
+        rentalShop.UpdateShopCars();
+
+        //Listen for inputs from user
         rentalShop.RunCommands();
 
     }
 
     private void SetLocation() {
         location = flagParameters.get("location");
+        
     }
 
     private void SetAllocatedSpaces() {
-        location = flagParameters.get("spaces-available");
+        allocatedSpaces = Integer.valueOf(flagParameters.getOrDefault("spaces-available", "3"));
+    }
+
+    private void SetLots() {
+        String[] lots = flagParameters.getOrDefault("lots", location).split(",");
+        lotList = new ArrayList<>(Arrays.asList(lots));
     }
 
     @Override
     protected void RetrieveLocationData() {
-        String rentalShopData = ReadFile(flagParameters.get("location") + ".txt");
+        String rentalShopData = ReadFile(location +"Shop"+ ".txt");
         if(!rentalShopData.isBlank()) {
             String earningsData, carsData;
             Integer startIndex = 0, midIndex, endIndex;
 
             midIndex = rentalShopData.indexOf("\n");
-            endIndex = rentalShopData.indexOf("\n", midIndex);
+            endIndex = rentalShopData.indexOf("\n", midIndex + 1);
             earningsData = rentalShopData.substring(startIndex, endIndex + 1);
 
             startIndex = endIndex + 1;
@@ -86,10 +100,10 @@ public class CarRental extends BaseRunningProgram{
         earningsAmount = earningsData.substring(startIndex, endIndex);
         startIndex = endIndex + 1;
         endIndex = earningsData.indexOf("\n", startIndex);
-        losesAmount = earningsAmount.substring(startIndex, endIndex);
+        losesAmount = earningsData.substring(startIndex, endIndex);
 
-        earnings = Integer.valueOf(earningsAmount);
-        loses = Integer.valueOf(losesAmount);
+        earnings = Double.valueOf(earningsAmount);
+        loses = Double.valueOf(losesAmount);
     }
 
     private void RunCommands() {
@@ -101,10 +115,16 @@ public class CarRental extends BaseRunningProgram{
 
             //Receive command from command line/GUI
             command = inputReciever.nextLine();
-            command = command.toUpperCase();
 
+            //format command properly
+            command = command.toUpperCase();
+            command = command.trim();
+            
             //Parse extract command type from command
             Integer endOfCommandType = command.indexOf(" ");
+            if(endOfCommandType == -1) {
+                endOfCommandType = command.length();
+            }
             commandType = command.substring(0, endOfCommandType);
             
             //Check command is supported
@@ -117,7 +137,7 @@ public class CarRental extends BaseRunningProgram{
             switch(commandType) {
                 case "RENT" -> {
                     //Check if paramters have been passed alongside command
-                    if((endOfCommandType + 1) == command.length())
+                    if((endOfCommandType) == command.length())
                     {
                         System.out.println("No parameters where given for RENT command!");
                         System.out.println("Unable to perform operation!");
@@ -126,9 +146,10 @@ public class CarRental extends BaseRunningProgram{
                     //Extract parameters from command
                     commandParameters = command.substring(endOfCommandType + 1);
                     //Retrieve a car from store or lot
-                    Tuple2<Car, Integer> selectedCar = RentCar(commandParameters);
+                    Car selectedCar = RentCar(commandParameters);
                     if(selectedCar != null) {
-
+                        System.out.println(String.format("Car with license plate %s has been rented out sucessfully!", selectedCar.GetLicensePlate()));
+                        UpdateRentedCarsFile(selectedCar, true);
                     }
                 }
                 case "RETURN" -> {
@@ -166,11 +187,13 @@ public class CarRental extends BaseRunningProgram{
                     GetTransactions();
                 }
             }
+            //Update allocated cars for shop
+            UpdateShopCars();
         }
     }
 
-    private Tuple2<Car, Integer> RentCar(String carType) {
-        if(!CarStaticData.SEDAN.equals(carType) || !CarStaticData.VAN.equals(carType) || !CarStaticData.SUV.equals(carType)) {
+    private Car RentCar(String carType) {
+        if(!CarStaticData.SEDAN.equals(carType) && !CarStaticData.VAN.equals(carType) && !CarStaticData.SUV.equals(carType)) {
             System.out.println(String.format("%s is not a supported car type!", carType));
             return null;
         }
@@ -183,16 +206,17 @@ public class CarRental extends BaseRunningProgram{
             //Return it
             if(currentCar.GetCarType().equals(carType)) {
                 carList.remove(currentCar);
-                UpdateCarRentalFile();
-                return new Tuple2<>(currentCar, 0);
+                currentCar.SetDiscountRate(0);
+                return currentCar;
             }
         }
 
         //Search for car in lots allocated to rental shop
         //Return it if found
-        Car searchCar = SearchCarForRent(carType);
+        Car searchCar = RetrieveCarFromLot(carType);
         if(searchCar != null) {
-            return new Tuple2<>(searchCar, 10);
+            searchCar.SetDiscountRate(10);
+            return searchCar;
         }
 
         //Return null if no car was found in lots
@@ -201,8 +225,9 @@ public class CarRental extends BaseRunningProgram{
     }
     
     private void ReturnCar(String licensePlate, Double kilometersTraversed) {
+        String formatedLicensePlate = licensePlate.toUpperCase();
         String rentedCarString = ReadFile("RentedCars.txt");
-        if(!rentedCarString.contains(licensePlate)) {
+        if(!rentedCarString.contains(formatedLicensePlate)) {
             System.out.println("Car is not part of our rented cars log!");
             System.out.println("Car return denied.");
         }
@@ -212,14 +237,18 @@ public class CarRental extends BaseRunningProgram{
         //Remove car from rented car list and apply discount rate if needed
         List<Car> rentedCars = RetrieveRentedCars();
         for (int i = 0; i < rentedCars.size(); i++) {
-            if(rentedCars.get(i).GetLicensePlate().equals(licensePlate)) {
+            if(rentedCars.get(i).GetLicensePlate().equals(formatedLicensePlate)) {
                 discountRate = rentedCars.get(i).GetDiscountRate();
+
+                Tuple2<Double, Double> transactionEarnings = CalculateLoses(discountRate, kilometersTraversed);  
+                earnings += transactionEarnings.GetItem1();
+                loses += transactionEarnings.GetItem2();
+
+                UpdateTransactionsFile(rentedCars.get(i).GetDiscountRate(), rentedCars.get(i), transactionEarnings.GetItem1());
+                
                 rentedCars.remove(i);
             }
         }
-
-
-        
     }
 
     private void GetList() {
@@ -246,34 +275,33 @@ public class CarRental extends BaseRunningProgram{
         System.out.println();
     }
 
-    private void CalculateLoses() {
+    private Tuple2<Double, Double> CalculateLoses(Integer discountRate, Double kmTravelled) {
+        Double discount = kmTravelled * (discountRate/100);
+        Double earned = kmTravelled - discount;
 
+        return new Tuple2<>(discount, earned);
     }
 
-    private Car SearchCarForRent(String carType) {
-        if(lotList.isEmpty()) {
-            System.out.println("No lots have been allocated to this shop!");
-            System.out.println("Unable to search for rental car.");
-            return null;
+    private void UpdateTransactionsFile(Integer discountRate, Car returnedCar, Double transactionEarnings) {
+        String newTransaction = "";
+        String discountApplied;
+        if(discountRate == 0) {
+            discountApplied = "false";
         }
-
-        LotManager searchLot = new LotManager();
-        Car lotCar;
-        for(String lot: lotList) {
-            searchLot.SetLotName(lot);
-            searchLot.RetrieveLocationData();
-            lotCar = searchLot.SearchCarType(carType);
-            if(lotCar != null) {
-                System.out.println(String.format("A car of type %s was found in lot %s!", carType, lot));
-                searchLot.UpdateLotFile();
-                return lotCar;
-            }
+        else {
+            discountApplied = "true";
         }
-        return null;
-    }
-
-    private void UpdateCarRentalFile() {
-
+        newTransaction += "====================================\n";
+        newTransaction += "Discount applied = " + discountApplied + "\n";
+        newTransaction += "Earnings from transaction  = " + transactionEarnings.toString() + "\n";
+        newTransaction += "Car information = " + returnedCar.ToString() + "\n";
+        try {
+            EditFile(newTransaction, location + "Transactions.txt", true);
+        }
+        catch(IOException e) {
+            System.out.println(String.format("Unable to update %sTransactions.txt file", location));
+        }
+       
     }
 
     private List<Car> RetrieveRentedCars() {
@@ -311,7 +339,142 @@ public class CarRental extends BaseRunningProgram{
         return rentedCars;
     }
 
-    private void UpdateRentedCarsFile(Car rentedCar, Integer DiscountRate) {
+    private void UpdateRentedCarsFile(Car rentedCar, Boolean mode) {
+        String discountRate = rentedCar.GetDiscountRate().toString();
+        String carString = rentedCar.ToString();
+        String rentedCarString = discountRate + "\n" + carString;
+        if(mode) {
+            try {
+                EditFile(rentedCarString, "RentedCars.txt", true);
+            } catch (IOException e) {
+                System.out.println(String.format("Error when adding car with license plate %s to RentedCars.txt!", rentedCar.GetLicensePlate()));
+            }
+        }
+        else {
+            System.out.println(String.format("Removing car with license plate %s from RentedCars.txt", rentedCar.GetLicensePlate()));
+            String rentedCars = ReadFile("RentedCars.txt");
+            rentedCars = rentedCars.replace(rentedCarString,"");
+            try {
+                EditFile(rentedCars, "RentedCars.txt", true);
+            } catch (IOException e) {
+                System.out.println(String.format("Error when removing car with license plate %s from RentedCars.txt!", rentedCar.GetLicensePlate()));
+            }
+        }
+    }
+
+    public void UpdateShopCars() {
+        if(carList.size() >= allocatedSpaces) {
+            //Send first car to lot
+            SendCarToLot(carList.get(0));
+        } else if (carList.isEmpty()){
+            //Retrieve car from lot list if possible
+            Car retrievedCar = RetrieveCarFromLot();
+            if(retrievedCar != null) {
+                carList.add(retrievedCar);
+            }
+        }
+        UpdateRentalShopFile();
+    }
+
+    private void UpdateRentalShopFile() {
+        String rentalShopString = earnings.toString() + "\n" + loses.toString() + "\n";
+
+        for (int i = 0; i < allocatedSpaces; i++) {
+            //If i is a valid index for carList
+            //Add car from index i to rentaShopString
+            if(i <= carList.size() - 1) {
+                rentalShopString += carList.get(i).ToString();
+            }
+            else {
+                rentalShopString += "#\n";
+            }
+        }
+
+        try {
+            EditFile(rentalShopString, location +"Shop"+ ".txt", false);
+        } catch (IOException e) {
+            System.out.println(String.format("Error trying to update %sShop.txt file!", location));
+        }
+
+    }
+
+    private void SendCarToLot(Car sentCar) {
+        carList.remove(sentCar);
+        String carString = sentCar.ToString();
+
+        String lotIndex = ReadFile("LotIndex.txt");
+        String[] lots = lotIndex.split("\n");
+        Integer smallestLotIndex = 0,  carAmount, smallestCarAmount = Integer.MAX_VALUE;
         
+        LotManager manager = new LotManager();
+        for (int i = 0; i < lots.length; i++) {
+            manager.SetLotName(lots[i]);
+            manager.RetrieveLocationCars(lots[i]);
+            carAmount = manager.GetCarListSize();
+            if(carAmount < smallestCarAmount) {
+                smallestCarAmount = carAmount;
+                smallestLotIndex = i;
+            }
+        }
+        String selectedLot = lots[smallestLotIndex];
+
+        try {
+            EditFile(carString, selectedLot + ".txt", true);
+            manager.UpdateLotIndexFile();
+        } catch (IOException e) {
+            System.out.println(String.format("Error when transefirng car with license plate %s from current shop to lot %s!", sentCar.GetLicensePlate(), selectedLot));
+        }
+        UpdateRentalShopFile();
+    }
+
+    //Used for retrieving a car when car amount falls bellow treshold
+    private Car RetrieveCarFromLot() {
+        if(lotList.isEmpty()) {
+            System.out.println("No lots have been allocated to this shop!");
+            System.out.println("Unable to search for rental car.");
+            return null;
+        }
+
+        LotManager searchLot = new LotManager();
+        Car lotCar;
+        for(String lot: lotList) {
+            searchLot.SetLotName(lot);
+            searchLot.RetrieveLocationData();
+            lotCar = searchLot.SearchCar();
+            if(lotCar != null) {
+                System.out.println(String.format("Retreiving a car of type %s from lot %s to keep a car in stock", lotCar.GetCarType(), lot));
+                searchLot.UpdateLotFile();
+                return lotCar;
+            }
+        }
+        UpdateRentalShopFile();
+        return null;
+    }
+
+    //Used for retrieving a car when doing a search for a rent
+    private Car RetrieveCarFromLot(String carType) {
+        if(lotList.isEmpty()) {
+            System.out.println("No lots have been allocated to this shop!");
+            System.out.println("Unable to search for rental car.");
+            return null;
+        }
+
+        LotManager searchLot = new LotManager();
+        Car lotCar;
+        for(String lot: lotList) {
+            searchLot.SetLotName(lot);
+            searchLot.RetrieveLocationData();
+            lotCar = searchLot.SearchCar(carType);
+            if(lotCar != null) {
+                System.out.println(String.format("A car of type %s was found in lot %s!", carType, lot));
+                searchLot.UpdateLotFile();
+                return lotCar;
+            }
+            else {
+                System.out.println(String.format("No car of the type %s was found in lot %s.", carType, lot));
+            }
+        }
+        UpdateRentalShopFile();
+        return null;
     }
 }
