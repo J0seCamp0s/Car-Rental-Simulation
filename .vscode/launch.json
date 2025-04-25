@@ -6,7 +6,14 @@
     "configurations": [
         {
             "type": "java",
-            "name": "CarRental-Test",
+            "name": "CarRentalGUI",
+            "request": "launch",
+            "mainClass": "CarRentalGUI",
+            "projectName": "Car-Rental-Simulation_45613a50"
+        },
+        {
+            "type": "java",
+            "name": "CarRental-NormalTest",
             "request": "launch",
             "mainClass": "CarRental",
             "console": "integratedTerminal",
@@ -14,6 +21,54 @@
                 "--location=Escazu",
                 "--spaces-available=3",
                 "--lots=Cartago,SanJose"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "CarRental-NoRealLotAllocated-0CarsInShop",
+            "request": "launch",
+            "mainClass": "CarRental",
+            "console": "integratedTerminal",
+            "args": [
+                "--location=Pavas",
+                "--spaces-available=3",
+                "--lots=FalseLot1,FalseLot2"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "CarRental-NoRealLotAllocated-1CarsInShop",
+            "request": "launch",
+            "mainClass": "CarRental",
+            "console": "integratedTerminal",
+            "args": [
+                "--location=Desamparados",
+                "--spaces-available=3",
+                "--lots=FalseLot1,FalseLot2"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "CarRental-NoRealLotAllocated-3CarsInShop",
+            "request": "launch",
+            "mainClass": "CarRental",
+            "console": "integratedTerminal",
+            "args": [
+                "--location=Guacima",
+                "--spaces-available=3",
+                "--lots=FalseLot1,FalseLot2"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "CarRental-MoreCarsThanSpacesCarsInShop",
+            "request": "launch",
+            "mainClass": "CarRental",
+            "console": "integratedTerminal",
+            "args": [
+                "--location=SantaAna",
+                "--spaces-available=3",
+                "--lots=Heredia,Alajuela"
             ]
         },
         {
@@ -29,14 +84,25 @@
         },
         {
             "type": "java",
-            "name": "LotManager-Default-Value-Recognition(RemoveACar)",
+            "name": "LotManager-Default-Value-Recognition(RemoveACarNotInLot)",
             "request": "launch",
             "mainClass": "LotManager",
             "console": "integratedTerminal",
             "args": [
-                "--lot-name=SanJose",
+                "--lot-name=Limon",
                 "--remove-vehicle=TIQ-086"
             ]
-        }
+        },
+        {
+            "type": "java",
+            "name": "LotManager-Default-Value-Recognition(RemoveACarInLot)",
+            "request": "launch",
+            "mainClass": "LotManager",
+            "console": "integratedTerminal",
+            "args": [
+                "--lot-name=Puntarenas",
+                "--remove-vehicle=TIQ-086"
+            ]
+        },
     ]
 }

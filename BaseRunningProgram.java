@@ -109,8 +109,24 @@ public abstract class BaseRunningProgram {
         String licensePlate, type;
 
         String[] carAttributes = carString.split(",");
+
+        if(carAttributes.length > 3) {
+            System.out.println("More than three car attributes encountered in car string!");
+            return new Tuple3<>(null, null, null);
+        }
+
         licensePlate = carAttributes[0];
+        if(!CheckLincensePlateFormat(licensePlate)) {
+            System.out.println("Unsupported license plate format detected in car string!");
+            return new Tuple3<>(null, null, null);
+        }
+        
         type = carAttributes[1];
+        
+        if(!CarStaticData.SEDAN.equals(type) && !CarStaticData.VAN.equals(type) && !CarStaticData.SUV.equals(type)) {
+            System.out.println("Unsupported car type detected in car string!");
+            return new Tuple3<>(null, null, null);
+        }
 
         try {
             kmTravelled = Double.valueOf(carAttributes[2]);
@@ -125,11 +141,11 @@ public abstract class BaseRunningProgram {
 
         String[] carStrings = locationCars.split("\n");
         for(String carString: carStrings) {
-            if(carString.contains("#")) {
+            if(carString.contains("#") || carString.isBlank()) {
                 continue;
             }
             
-            Tuple3<String, String, Double> carTuple = ParseCarString(carString);
+            Tuple3<String, String, Double> carTuple = ParseCarString(carString.trim());
             if(carTuple.GetItem1() == null) {
                 return false;
             }

@@ -66,7 +66,9 @@ public class LotManager extends BaseRunningProgram{
         String carLotData = ReadFile(lotName + ".txt");
         if(!carLotData.isBlank()) {
             carList.clear();
-            RetrieveLocationCars(carLotData);
+            if(!RetrieveLocationCars(carLotData)) {
+                System.out.println(String.format("Format errors ecountered in %s.txt file, some vehicles might have not been retrieved", lotName));
+            }
         }
         else {
             System.out.println(String.format("The lot file for current lot (%s) does not exist yet.", lotName));

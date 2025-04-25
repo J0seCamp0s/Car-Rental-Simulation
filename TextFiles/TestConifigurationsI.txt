@@ -1,0 +1,26 @@
+CarRentalGUI
+javac CarRentalGUI.java && java CarRentalGUI
+
+CarRental-NormalTest
+javac CarRental.java && java CarRental --location=Escazu --spaces-available=3 --lots=Cartago,SanJose
+
+CarRental-NoRealLotAllocated-0CarsInShop
+javac CarRental.java && java CarRental --location=Pavas --spaces-available=3 --lots=FalseLot1,FalseLot2
+
+CarRental-NoRealLotAllocated-1CarsInShop
+javac CarRental.java && java CarRental --location=Desamparados --spaces-available=3 --lots=FalseLot1,FalseLot2
+
+CarRental-NoRealLotAllocated-3CarsInShop
+javac CarRental.java && java CarRental --location=Guacima --spaces-available=3 --lots=FalseLot1,FalseLot2
+
+CarRental-MoreCarsThanSpacesCarsInShop
+javac CarRental.java && java CarRental --location=SantaAna --spaces-available=3 --lots=Heredia,Alajuela
+
+LotManager-Default-Value-Recognition(Add5Sedans)
+javac LotManager.java && java LotManager --lot-name=Cartago --add-sedan=5
+
+LotManager-Default-Value-Recognition(RemoveACarNotInLot)
+javac LotManager.java && java LotManager --lot-name=Limon --remove-vehicle=TIQ-086
+
+LotManager-Default-Value-Recognition(RemoveACarInLot)
+javac LotManager.java && java LotManager --lot-name=Puntarenas --remove-vehicle=TIQ-086

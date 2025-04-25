@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import javax.swing.SwingUtilities;
 
 public class CarRental extends BaseRunningProgram{
     private String location;
@@ -54,7 +55,9 @@ public class CarRental extends BaseRunningProgram{
         rentalShop.UpdateShopCars();
 
         //Listen for inputs from user
-        rentalShop.RunCommands();
+        //rentalShop.RunCommands();
+
+        SwingUtilities.invokeLater(() -> new CarRentalGUI(rentalShop));
 
     }
 
@@ -86,19 +89,31 @@ public class CarRental extends BaseRunningProgram{
 
     @Override
     protected void RetrieveLocationData() {
-        String rentalShopData = ReadFile(location +"Shop"+ ".txt");
+        String rentalShopData = ReadFile(location + ".txt");
         if(!rentalShopData.isBlank()) {
-            String earningsData, carsData;
+            String earningsData, carsData, lotsData, carAmount;
             Integer startIndex = 0, midIndex, endIndex;
+            endIndex = rentalShopData.indexOf("\n");
+            lotsData = rentalShopData.substring(startIndex, endIndex);
 
-            midIndex = rentalShopData.indexOf("\n");
+            startIndex = endIndex + 1;
+            endIndex = rentalShopData.indexOf("\n", startIndex);
+            carAmount = rentalShopData.substring(startIndex, endIndex);
+
+            startIndex = endIndex + 1;
+            midIndex = rentalShopData.indexOf("\n", startIndex);
             endIndex = rentalShopData.indexOf("\n", midIndex + 1);
             earningsData = rentalShopData.substring(startIndex, endIndex + 1);
 
             startIndex = endIndex + 1;
             carsData = rentalShopData.substring(startIndex);
+
+            RetrieveLots(lotsData);
+            RetrieveCarSpaces(carAmount);
             RetrieveEarnings(earningsData);
-            RetrieveLocationCars(carsData);
+            if(!RetrieveLocationCars(carsData)) {
+                System.out.println(String.format("Format errors ecountered in %sShop.txt file, some vehicles might have not been retrieved", location));
+            }
         }
         else {
             System.out.println(String.format("The car rental file for current location (%s) does not exist yet.", flagParameters.get("location")));
@@ -113,114 +128,164 @@ public class CarRental extends BaseRunningProgram{
         startIndex = endIndex + 1;
         endIndex = earningsData.indexOf("\n", startIndex);
         losesAmount = earningsData.substring(startIndex, endIndex);
-
-        earnings = Double.valueOf(earningsAmount);
-        loses = Double.valueOf(losesAmount);
+        try {
+            earnings = Double.valueOf(earningsAmount);
+            loses = Double.valueOf(losesAmount);
+        } catch (NumberFormatException e) {
+            System.out.println(String.format("An error was detected in the current shop's (%s) file data!", location));
+            System.out.println("Defaulting to 0.0 earnings and 0.0 loses");
+        }
+        
     }
+
+    private void RetrieveLots(String lotString) {
+        String[] lotsFromFile = lotString.split(",");
+
+        if(lotsFromFile.length == 0) {
+            System.out.println(String.format("No lots found in %s.txt, using lots passed in flag parameters", location));
+        }
+        else if (lotsFromFile[0].isBlank()) {
+            System.out.println(String.format("No lots found in %s.txt, using lots passed in flag parameters", location));
+        }
+
+        lotList = new ArrayList<>(Arrays.asList(lotsFromFile));
+
+        String allAvailableLots = ReadFile("LotIndex.txt");
+        if(allAvailableLots.isBlank()) {
+            System.out.println("There are no lots defined yet!");
+            System.out.println("This may affect the performance of the shop, please use the LotManager program to define some lots first!");
+            return;
+        }
+
+        for(String lot: lotsFromFile) {
+            if(!allAvailableLots.contains(lot)) {
+                System.out.println(String.format("The lot %s is not part of our lot index, cannot be part of allocated lots list", lot));
+            }
+        }
+        
+    }
+
+    private void RetrieveCarSpaces(String carAmount) {
+        if(carAmount.isBlank()) {
+            System.out.println(String.format("No car amount was found in %s.txt", location));
+            System.out.println("Using value specified in flag parameters");
+            return;
+        }
+
+        Integer carAmountInteger;
+        try {
+            carAmountInteger = Integer.valueOf(carAmount);
+        } catch (NumberFormatException e) {
+            System.out.println(String.format("Error in car amount format at %s.txt", location));
+            System.out.println("Using value specified in flag parameters");
+            return;
+        }
+        allocatedSpaces = carAmountInteger;
+    } 
 
     private void RunCommands() {
         String command = "", commandType, commandParameters;
-        Scanner inputReciever = new Scanner(System.in);
-
-        while(!command.equals("EXIT")) {
-            System.out.println("Please enter a command:");
-
-            //Receive command from command line/GUI
-            command = inputReciever.nextLine();
-
-            //format command properly
-            command = command.toUpperCase();
-            command = command.trim();
-            
-            //Parse extract command type from command
-            Integer endOfCommandType = command.indexOf(" ");
-            if(endOfCommandType == -1) {
-                endOfCommandType = command.length();
+        try (Scanner inputReciever = new Scanner(System.in)) {
+            while(!command.contains("EXIT")) {
+                System.out.println("Please enter a command:");
+                
+                //Receive command from command line/GUI
+                command = inputReciever.nextLine();
+                
+                //format command properly
+                command = command.toUpperCase();
+                command = command.trim();
+                
+                //Parse extract command type from command
+                Integer endOfCommandType = command.indexOf(" ");
+                if(endOfCommandType == -1) {
+                    endOfCommandType = command.length();
+                }
+                commandType = command.substring(0, endOfCommandType);
+                
+                //Check command is supported
+                if(!supportedCommands.contains(commandType)) {
+                    System.out.println(String.format("Error! %s is not a supported command", commandType));
+                    continue;
+                }
+                
+                //Take action based on command type
+                switch(commandType) {
+                    case "RENT" -> {
+                        //Check if paramters have been passed alongside command
+                        if((endOfCommandType) == command.length())
+                        {
+                            System.out.println("No parameters where given for RENT command!");
+                            System.out.println("Unable to perform operation!");
+                            continue;
+                        }
+                        //Extract parameters from command
+                        commandParameters = command.substring(endOfCommandType + 1);
+                        //Retrieve a car from store or lot
+                        Car selectedCar = RentCar(commandParameters);
+                        if(selectedCar != null) {
+                            System.out.println(String.format("Car with license plate %s has been rented out sucessfully!", selectedCar.GetLicensePlate()));
+                            UpdateRentedCarsFile(selectedCar, true);
+                        }
+                    }
+                    case "RETURN" -> {
+                        //Check if paramters have been passed alongside command
+                        if((endOfCommandType) == command.length())
+                        {
+                            System.out.println("No parameters where given for RENT command!");
+                            System.out.println("Unable to perform operation!");
+                            continue;
+                        }
+                        
+                        //Extract command paramters from user inputs
+                        commandParameters = command.substring(endOfCommandType + 1);
+                        String licensePlate, kmString;
+                        Integer endOfLicensePlate = commandParameters.indexOf(" ");
+                        
+                        //Check if km travelled were given as parameter
+                        if(endOfLicensePlate < 0) {
+                            System.out.println("No kilometers travelled were specified for returned car!");
+                            System.out.println("Unable to perform operation!");
+                            continue;
+                        }
+                        
+                        //Extract license plate
+                        licensePlate = commandParameters.substring(0, endOfLicensePlate);
+                        if(!CheckLincensePlateFormat(licensePlate)) {
+                            System.out.println(String.format("%s is not a valid license plate format!", licensePlate));
+                            System.out.println("Unable to perform operation!");
+                            continue;
+                        }
+                        
+                        //Extract km travelled
+                        kmString = commandParameters.substring(endOfLicensePlate + 1);
+                        Double kmTravelled;
+                        
+                        try {
+                            kmTravelled = Double.valueOf(kmString);
+                        }
+                        catch (NumberFormatException e) {
+                            System.out.println("Non-numeric value given for distance travelled!");
+                            continue;
+                        }
+                        ReturnCar(licensePlate, kmTravelled);
+                    }
+                    case "LIST" -> {
+                        System.out.println(String.format("Retreiving current status of %s shop", location));
+                        GetList();
+                    }
+                    case "TRANSACTIONS" -> {
+                        System.out.println(String.format("Retreiving transactions from %s shop", location));
+                        GetTransactions();
+                    }
+                }
+                //Update allocated cars for shop
+                UpdateShopCars();
             }
-            commandType = command.substring(0, endOfCommandType);
-            
-            //Check command is supported
-            if(!supportedCommands.contains(commandType)) {
-                System.out.println(String.format("Error! %s is not a supported command", commandType));
-                continue;
-            }
-
-            //Take action based on command type 
-            switch(commandType) {
-                case "RENT" -> {
-                    //Check if paramters have been passed alongside command
-                    if((endOfCommandType) == command.length())
-                    {
-                        System.out.println("No parameters where given for RENT command!");
-                        System.out.println("Unable to perform operation!");
-                        continue;
-                    }
-                    //Extract parameters from command
-                    commandParameters = command.substring(endOfCommandType + 1);
-                    //Retrieve a car from store or lot
-                    Car selectedCar = RentCar(commandParameters);
-                    if(selectedCar != null) {
-                        System.out.println(String.format("Car with license plate %s has been rented out sucessfully!", selectedCar.GetLicensePlate()));
-                        UpdateRentedCarsFile(selectedCar, true);
-                    }
-                }
-                case "RETURN" -> {
-                    //Check if paramters have been passed alongside command
-                    if((endOfCommandType) == command.length())
-                    {
-                        System.out.println("No parameters where given for RENT command!");
-                        System.out.println("Unable to perform operation!");
-                        continue;
-                    }
-                    
-                    //Extract command paramters from user inputs
-                    commandParameters = command.substring(endOfCommandType + 1);
-                    String licensePlate, kmString;
-                    Integer endOfLicensePlate = commandParameters.indexOf(" ");
-                    
-                    //Check if km travelled were given as parameter
-                    if(endOfLicensePlate < 0) {
-                        System.out.println("No kilometers travelled were specified for returned car!");
-                        System.out.println("Unable to perform operation!");
-                        continue;
-                    }
-
-                    //Extract license plate 
-                    licensePlate = commandParameters.substring(0, endOfLicensePlate);
-                    if(!CheckLincensePlateFormat(licensePlate)) {
-                        System.out.println(String.format("%s is not a valid license plate format!", licensePlate));
-                        System.out.println("Unable to perform operation!");
-                        continue;
-                    }
-
-                    //Extract km travelled
-                    kmString = commandParameters.substring(endOfLicensePlate + 1);
-                    Double kmTravelled;
-
-                    try {
-                        kmTravelled = Double.valueOf(kmString);
-                    }
-                    catch (NumberFormatException e) {
-                        System.out.println("Non-numeric value given for distance travelled!");
-                        continue;
-                    }
-                    ReturnCar(licensePlate, kmTravelled);
-                }
-                case "LIST" -> {
-                    System.out.println(String.format("Retreiving current status of %s shop", location));
-                    GetList();
-                }
-                case "TRANSACTIONS" -> {
-                    System.out.println(String.format("Retreiving transactions from %s shop", location));
-                    GetTransactions();
-                }
-            }
-            //Update allocated cars for shop
-            UpdateShopCars();
         }
     }
 
-    private Car RentCar(String carType) {
+    public Car RentCar(String carType) {
         if(!CarStaticData.SEDAN.equals(carType) && !CarStaticData.VAN.equals(carType) && !CarStaticData.SUV.equals(carType)) {
             System.out.println(String.format("%s is not a supported car type!", carType));
             return null;
@@ -252,7 +317,7 @@ public class CarRental extends BaseRunningProgram{
         return null;
     }
     
-    private void ReturnCar(String licensePlate, Double kilometersTraversed) {
+    public void ReturnCar(String licensePlate, Double kilometersTraversed) {
         String formatedLicensePlate = licensePlate.toUpperCase();
         String rentedCarString = ReadFile("RentedCars.txt");
         if(!rentedCarString.contains(formatedLicensePlate)) {
@@ -280,7 +345,7 @@ public class CarRental extends BaseRunningProgram{
         }
     }
 
-    private void GetList() {
+    public void GetList() {
         System.out.println(String.format("===== Current State of the %s shop =====", location));
 
         System.out.println(String.format("+Location Earnings: %s", earnings));
@@ -301,7 +366,7 @@ public class CarRental extends BaseRunningProgram{
 
     }
 
-    private void GetTransactions() {
+    public void GetTransactions() {
         System.out.println(String.format("Total Earnings from %s shop: %f", location, earnings));
         String transactions = ReadFile(location + "Transactions.txt");
         System.out.println("Transactions list:");
@@ -400,10 +465,11 @@ public class CarRental extends BaseRunningProgram{
     }
 
     public void UpdateShopCars() {
-        if(carList.size() >= allocatedSpaces) {
+        while(carList.size() > allocatedSpaces - 2 && !carList.isEmpty()) {
             //Send first car to lot
             SendCarToLot(carList.get(0));
-        } else if (carList.isEmpty()){
+        }
+        if (carList.isEmpty()){
             //Retrieve car from lot list if possible
             Car retrievedCar = RetrieveCarFromLot();
             if(retrievedCar != null) {
@@ -414,7 +480,14 @@ public class CarRental extends BaseRunningProgram{
     }
 
     private void UpdateRentalShopFile() {
-        String rentalShopString = earnings.toString() + "\n" + loses.toString() + "\n";
+        String rentalShopString = "";
+        String lotString = "";
+        for (String lot : lotList) {
+            lotString += lot + ",";
+        }
+        rentalShopString += lotString + "\n";
+        rentalShopString += allocatedSpaces.toString() + "\n";
+        rentalShopString += earnings.toString() + "\n" + loses.toString() + "\n";
 
         for (int i = 0; i < allocatedSpaces; i++) {
             //If i is a valid index for carList
@@ -428,9 +501,9 @@ public class CarRental extends BaseRunningProgram{
         }
 
         try {
-            EditFile(rentalShopString, location +"Shop"+ ".txt", false);
+            EditFile(rentalShopString, location + ".txt", false);
         } catch (IOException e) {
-            System.out.println(String.format("Error trying to update %sShop.txt file!", location));
+            System.out.println(String.format("Error trying to update %s.txt file!", location));
         }
 
     }
@@ -446,7 +519,7 @@ public class CarRental extends BaseRunningProgram{
         LotManager manager = new LotManager();
         for (int i = 0; i < lots.length; i++) {
             manager.SetLotName(lots[i]);
-            manager.RetrieveLocationCars(lots[i]);
+            manager.RetrieveLocationData();
             carAmount = manager.GetCarListSize();
             if(carAmount < smallestCarAmount) {
                 smallestCarAmount = carAmount;
@@ -457,7 +530,6 @@ public class CarRental extends BaseRunningProgram{
 
         try {
             EditFile(carString, selectedLot + ".txt", true);
-            manager.UpdateLotIndexFile();
         } catch (IOException e) {
             System.out.println(String.format("Error when transefirng car with license plate %s from current shop to lot %s!", sentCar.GetLicensePlate(), selectedLot));
         }
