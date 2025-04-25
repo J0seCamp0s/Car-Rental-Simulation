@@ -1,0 +1,25 @@
+====================================
+Discount applied = false
+Earnings from transaction  = 0.0
+Car information = JJD-598,SEDAN,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 20.0
+Car information = WXZ-324,SEDAN,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 30.0
+Car information = DHI-726,SEDAN,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 25.0
+Car information = DHI-726,SEDAN,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 40.7
+Car information = SWV-065,SEDAN,0.0
+
