@@ -1,26 +1,36 @@
-CarRentalGUI
-javac CarRentalGUI.java && java CarRentalGUI
+
+Step #1:
+Please run the following command to compile all .java files: javac *.java
+
+Step #2:
+Select one of the following configurations to run:
 
 CarRental-NormalTest
-javac CarRental.java && java CarRental --location=Escazu --spaces-available=3 --lots=Cartago,SanJose
+java CarRental --location=Escazu --spaces-available=3 --lots=Cartago,SanJose
 
 CarRental-NoRealLotAllocated-0CarsInShop
-javac CarRental.java && java CarRental --location=Pavas --spaces-available=3 --lots=FalseLot1,FalseLot2
+java CarRental --location=Pavas --spaces-available=3 --lots=FalseLot1,FalseLot2
 
 CarRental-NoRealLotAllocated-1CarsInShop
-javac CarRental.java && java CarRental --location=Desamparados --spaces-available=3 --lots=FalseLot1,FalseLot2
+java CarRental --location=Desamparados --spaces-available=3 --lots=FalseLot1,FalseLot2
 
 CarRental-NoRealLotAllocated-3CarsInShop
-javac CarRental.java && java CarRental --location=Guacima --spaces-available=3 --lots=FalseLot1,FalseLot2
+java CarRental --location=Guacima --spaces-available=3 --lots=FalseLot1,FalseLot2
 
-CarRental-MoreCarsThanSpacesCarsInShop
-javac CarRental.java && java CarRental --location=SantaAna --spaces-available=3 --lots=Heredia,Alajuela
+CarRental-ConflictingFlagsAndShopFile
+java CarRental --location=SantaAna --spaces-available=3 --lots=Heredia,Puntarenas
 
 LotManager-Default-Value-Recognition(Add5Sedans)
-javac LotManager.java && java LotManager --lot-name=Cartago --add-sedan=5
+java LotManager --lot-name=Cartago --add-sedan=5
+
+LotManager-Default-Value-Recognition(Add3OfEachType)
+java LotManager --lot-name=Heredia --add-sedan=3 --add-suv=3 --add-van=3
+
+LotManager-Default-Value-Recognition(Add1OfEachType)
+java LotManager --lot-name=SanJose --add-sedan=1 --add-suv=1 --add-van=1
 
 LotManager-Default-Value-Recognition(RemoveACarNotInLot)
-javac LotManager.java && java LotManager --lot-name=Limon --remove-vehicle=TIQ-086
+java LotManager --lot-name=Limon --remove-vehicle=TIQ-086
 
 LotManager-Default-Value-Recognition(RemoveACarInLot)
-javac LotManager.java && java LotManager --lot-name=Puntarenas --remove-vehicle=TIQ-086
+java LotManager --lot-name=Puntarenas --remove-vehicle=DHF-928

@@ -1,5 +1,0 @@
-====================================
-Discount applied = false
-Earnings from transaction  = 30.0
-Car information = UUQ-420,SEDAN,0.0
-

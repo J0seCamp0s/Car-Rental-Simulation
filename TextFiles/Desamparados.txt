@@ -1,0 +1,7 @@
+FalseLot1,FalseLot2
+3
+45.0
+4.5
+WIB-293,SEDAN,0.0
+#
+#

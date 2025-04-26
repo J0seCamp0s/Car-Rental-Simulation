@@ -482,8 +482,15 @@ public class CarRental extends BaseRunningProgram{
     private void UpdateRentalShopFile() {
         String rentalShopString = "";
         String lotString = "";
-        for (String lot : lotList) {
-            lotString += lot + ",";
+
+        for (int i = 0; i < lotList.size(); i++) {
+            if(i < lotList.size() - 1) {
+                lotString += lotList.get(i) + ",";
+            }
+            else {
+                lotString += lotList.get(i);
+            }
+            
         }
         rentalShopString += lotString + "\n";
         rentalShopString += allocatedSpaces.toString() + "\n";

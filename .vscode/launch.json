@@ -61,14 +61,14 @@
         },
         {
             "type": "java",
-            "name": "CarRental-MoreCarsThanSpacesCarsInShop",
+            "name": "CarRental-ConflictingFlagsAndShopFile",
             "request": "launch",
             "mainClass": "CarRental",
             "console": "integratedTerminal",
             "args": [
                 "--location=SantaAna",
                 "--spaces-available=3",
-                "--lots=Heredia,Alajuela"
+                "--lots=Heredia,Puntarenas"
             ]
         },
         {
@@ -80,6 +80,32 @@
             "args": [
                 "--lot-name=Cartago",
                 "--add-sedan=5"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "LotManager-Default-Value-Recognition(Add3OfEachType)",
+            "request": "launch",
+            "mainClass": "LotManager",
+            "console": "integratedTerminal",
+            "args": [
+                "--lot-name=Heredia",
+                "--add-sedan=3",
+                "--add-suv=3",
+                "--add-van=3",
+            ]
+        },
+        {
+            "type": "java",
+            "name": "LotManager-Default-Value-Recognition(Add1OfEachType)",
+            "request": "launch",
+            "mainClass": "LotManager",
+            "console": "integratedTerminal",
+            "args": [
+                "--lot-name=SanJose",
+                "--add-sedan=1",
+                "--add-suv=1",
+                "--add-van=1",
             ]
         },
         {
@@ -101,7 +127,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--lot-name=Puntarenas",
-                "--remove-vehicle=TIQ-086"
+                "--remove-vehicle=DHF-928"
             ]
         },
     ]
