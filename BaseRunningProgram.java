@@ -100,7 +100,7 @@ public abstract class BaseRunningProgram {
             }
         }
 
-        cList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled, false));
+        cList.add(new Car(licensePlate, vehicleTypeCode, distanceTravelled, discountApplied));
         return true;
     }
 

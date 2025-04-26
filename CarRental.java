@@ -54,9 +54,10 @@ public class CarRental extends BaseRunningProgram{
         //Remove cars from shop if allocated spaces were changed
         rentalShop.UpdateShopCars();
 
-        //Listen for inputs from user
+        //Listen for inputs from user through command line
         //rentalShop.RunCommands();
 
+        //Listen to user inputs through GUI
         SwingUtilities.invokeLater(() -> new CarRentalGUI(rentalShop));
 
     }
@@ -224,15 +225,15 @@ public class CarRental extends BaseRunningProgram{
                         //Retrieve a car from store or lot
                         Car selectedCar = RentCar(commandParameters);
                         if(selectedCar != null) {
-                            System.out.println(String.format("Car with license plate %s has been rented out sucessfully!", selectedCar.GetLicensePlate()));
-                            UpdateRentedCarsFile(selectedCar, true);
+                            System.out.println(String.format("Car with license plate %s has been rented out sucessfully with a discount of %d%%!", selectedCar.GetLicensePlate(), selectedCar.GetDiscountRate()));
+                            UpdateRentedCarsFile(selectedCar);
                         }
                     }
                     case "RETURN" -> {
                         //Check if paramters have been passed alongside command
                         if((endOfCommandType) == command.length())
                         {
-                            System.out.println("No parameters where given for RENT command!");
+                            System.out.println("No parameters where given for RETURN command!");
                             System.out.println("Unable to perform operation!");
                             continue;
                         }
@@ -333,14 +334,21 @@ public class CarRental extends BaseRunningProgram{
         for (int i = 0; i < rentedCars.size(); i++) {
             if(rentedCars.get(i).GetLicensePlate().equals(formatedLicensePlate)) {
                 discountRate = rentedCars.get(i).GetDiscountRate();
+                Double currentDistance = rentedCars.get(i).GetDistanceTravelled();
+                rentedCars.get(i).SetDistanceTravelled(currentDistance + kilometersTraversed);
 
                 Tuple2<Double, Double> transactionEarnings = CalculateLoses(discountRate, kilometersTraversed);  
                 loses += transactionEarnings.GetItem1();
                 earnings += transactionEarnings.GetItem2();
 
-                UpdateTransactionsFile(rentedCars.get(i).GetDiscountRate(), rentedCars.get(i), transactionEarnings.GetItem2());
-                UpdateRentedCarsFile(rentedCars.get(i), false);
+                UpdateTransactionsFile(discountRate, rentedCars.get(i), transactionEarnings.GetItem2());
+
+                //Add car to rental shop car list
+                //Remove it from rented car list
+                carList.add(rentedCars.get(i));
                 rentedCars.remove(i);
+                UpdateRentedCarsFile(rentedCars);
+                System.out.println(String.format("Car with license plate %s has been returned succesfully!", licensePlate));
             }
         }
     }
@@ -367,14 +375,20 @@ public class CarRental extends BaseRunningProgram{
     }
 
     public void GetTransactions() {
-        System.out.println(String.format("Total Earnings from %s shop: %f", location, earnings));
+        System.out.println("\n===== Transaction History =====");
+        System.out.println(String.format("Total Earnings from %s shop: %,.2f", location, earnings));
         String transactions = ReadFile(location + "Transactions.txt");
-        System.out.println("Transactions list:");
-        System.out.println(transactions);
+        if(!transactions.isBlank()) {
+            System.out.println("Transactions list:");
+            System.out.println(transactions);
+        }
+        else {
+            System.out.println("No transactions have been made for this shop.");
+        }
     }
 
     private Tuple2<Double, Double> CalculateLoses(Integer discountRate, Double kmTravelled) {
-        Double discount = kmTravelled * (discountRate/100);
+        Double discount = kmTravelled * ((double)discountRate/100);
         Double earned = kmTravelled - discount;
 
         return new Tuple2<>(discount, earned);
@@ -407,13 +421,19 @@ public class CarRental extends BaseRunningProgram{
         String rentedCarString = ReadFile("RentedCars.txt");
 
         Integer startIndex = 0, endIndex;
-        Boolean discountRate;
+        Integer discountRate;
         String carString;
 
         while(startIndex < rentedCarString.length()) {
             //Retrieve discount rate from line above car info
             endIndex = rentedCarString.indexOf('\n', startIndex);
-            discountRate = Boolean.valueOf(rentedCarString.substring(startIndex, endIndex));
+            try {
+                discountRate = Integer.valueOf(rentedCarString.substring(startIndex, endIndex));
+            } catch (NumberFormatException e) {
+                System.out.println("There is a format error in the file RentedCars.txt");
+                return null;
+            }
+            
 
             //Retrieve car info in next line
             startIndex = endIndex + 1;
@@ -430,37 +450,35 @@ public class CarRental extends BaseRunningProgram{
             }
             
             //Add new car to rentedCars list if no problems encountered
-            AddVehicle(carTuple.GetItem1(), carTuple.GetItem2(), carTuple.GetItem3(), rentedCars, discountRate);
+            AddVehicle(carTuple.GetItem1(), carTuple.GetItem2(), carTuple.GetItem3(), rentedCars, discountRate == 10);
             //Go to next line
             startIndex = endIndex + 1;
         }
         return rentedCars;
     }
 
-    private void UpdateRentedCarsFile(Car rentedCar, Boolean mode) {
-        String discountRate = rentedCar.GetDiscountRate().toString();
-        String carString = rentedCar.ToString();
-        String rentedCarString = discountRate + "\n" + carString;
-
-        //mode == true, add new car to RentedCars.txt file
-        if(mode) {
-            try {
-                EditFile(rentedCarString, "RentedCars.txt", true);
-            } catch (IOException e) {
-                System.out.println(String.format("Error when adding car with license plate %s to RentedCars.txt!", rentedCar.GetLicensePlate()));
-            }
+    //Used when removing a car from rented cars list
+    public void UpdateRentedCarsFile(List<Car> rentedCarList) {
+        String rentedCars = "";
+        for(Car currentCar: rentedCarList) {
+            rentedCars += currentCar.GetDiscountRate().toString() + "\n";
+            rentedCars += currentCar.ToString();
         }
+        try {
+            EditFile(rentedCars, "RentedCars.txt", false);
+        } catch (IOException e) {
+            System.out.println("Error when removing car from RentedCars.txt!");
+        }
+    }
 
-        //mode == false, remove car from RentedCars.txt file
-        else {
-            System.out.println(String.format("Removing car with license plate %s from RentedCars.txt", rentedCar.GetLicensePlate()));
-            String rentedCars = ReadFile("RentedCars.txt");
-            rentedCars = rentedCars.replace(rentedCarString,"");
-            try {
-                EditFile(rentedCars, "RentedCars.txt", false);
-            } catch (IOException e) {
-                System.out.println(String.format("Error when removing car with license plate %s from RentedCars.txt!", rentedCar.GetLicensePlate()));
-            }
+    //Used when adding a car from rented cars list
+    public void UpdateRentedCarsFile(Car rentedCar) {
+        String rentedCarString = rentedCar.GetDiscountRate().toString() + "\n";
+        rentedCarString += rentedCar.ToString();
+        try {
+            EditFile(rentedCarString, "RentedCars.txt", true);
+        } catch (IOException e) {
+            System.out.println("Error when removing car from RentedCars.txt!");
         }
     }
 

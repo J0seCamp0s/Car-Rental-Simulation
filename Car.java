@@ -44,4 +44,8 @@ public class Car extends CarStaticData{
     public Integer GetDiscountRate() {
         return discountRate;
     }
+
+    public Double GetDistanceTravelled() {
+        return distanceTravelled;
+    }
 }

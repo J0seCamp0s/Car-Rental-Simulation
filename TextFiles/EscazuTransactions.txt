@@ -1,0 +1,45 @@
+====================================
+Discount applied = false
+Earnings from transaction  = 37.0
+Car information = YZC-102,VAN,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 73.7
+Car information = JRM-374,SUV,0.0
+
+====================================
+Discount applied = false
+Earnings from transaction  = 35.0
+Car information = XKK-284,SEDAN,0.0
+
+====================================
+Discount applied = true
+Earnings from transaction  = 33.3
+Car information = RZD-720,VAN,33.3
+
+====================================
+Discount applied = true
+Earnings from transaction  = 11.1
+Car information = QXZ-916,SUV,11.1
+
+====================================
+Discount applied = true
+Earnings from transaction  = 19.98
+Car information = QBC-177,VAN,22.2
+
+====================================
+Discount applied = false
+Earnings from transaction  = 32.7
+Car information = OTO-911,SEDAN,32.7
+
+====================================
+Discount applied = true
+Earnings from transaction  = 10.998000000000001
+Car information = JKE-446,SUV,12.22
+
+====================================
+Discount applied = false
+Earnings from transaction  = 32.32
+Car information = TLG-682,SEDAN,32.32
+
